@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   TextInput,
   View,
@@ -6,24 +6,14 @@ import {
   TouchableWithoutFeedback,
 } from "react-native";
 
-const TitleContent = ({ onSave }) => {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [isContent, setIsContent] = useState(false);
-
+const TitleContent = ({ title, content, onTitleChange, onContentChange }) => {
   const handleTextChange = (value) => {
-    if (value.includes("\n") && !isContent) {
-      setIsContent(true);
-    }
-
     const splitText = value.split("\n");
     const newTitle = splitText[0];
     const newContent = splitText.slice(1).join("\n");
 
-    setTitle(newTitle);
-    setContent(newContent);
-
-    onSave(newTitle, newContent);
+    onTitleChange(newTitle);
+    onContentChange(newContent);
   };
 
   const handleDismissKeyboard = () => {
@@ -37,23 +27,19 @@ const TitleContent = ({ onSave }) => {
           className="text-4xl font-bold text-black"
           value={title}
           multiline
-          autoFocus={!isContent}
+          autoFocus={!content}
           onChangeText={handleTextChange}
           placeholder="Title"
           placeholderTextColor="gray"
           style={{ paddingVertical: 0 }}
         />
 
-        {isContent && (
+        {content !== undefined && (
           <TextInput
             className="text-[17px] mt-4 font-light text-black"
             value={content}
             multiline
-            autoFocus={isContent}
-            onChangeText={(contentText) => {
-              setContent(contentText);
-              onSave(title, contentText);
-            }}
+            onChangeText={onContentChange}
             placeholder="Content"
             placeholderTextColor="gray"
             style={{ paddingVertical: 0 }}

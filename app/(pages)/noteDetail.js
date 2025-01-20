@@ -47,7 +47,7 @@ const NoteDetail = () => {
   const requestPermissions = async () => {
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== "granted") {
-      alert("Bildirim izni verilmedi!");
+      alert("Notifications blocked");
       return false;
     }
     return true;
@@ -60,13 +60,13 @@ const NoteDetail = () => {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: "Reminder!",
-        body: `Your note: "${updatedTitle}"`,
+        body: `${updatedTitle}"`,
         sound: true,
       },
       trigger: date,
     });
 
-    alert("Bildirim başarıyla ayarlandı!");
+    alert("Timer set perfectly");
   };
 
   const handleDatePickerConfirm = (date) => {

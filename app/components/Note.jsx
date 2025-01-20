@@ -1,24 +1,54 @@
-// Note.js
 import React, { useState, useEffect, useCallback } from "react";
-import { Text, View, ScrollView, TouchableOpacity, Image } from "react-native";
+import {
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  FlatList,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getUserNotes } from "../../lib/appwrite";
 import { useGlobalContext } from "../../context/GlobalProvider";
 import { useFocusEffect } from "@react-navigation/native";
 import NoNotes from "../../assets/images/NoNotes.png";
+import { getImagePreview } from "../../lib/appwrite";
 
 const Note = ({ query, selectedCategory }) => {
   const { user } = useGlobalContext();
   const router = useRouter();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [imageUrls, setImageUrls] = useState({});
+
+  const getIconName = (category) => {
+    switch (category) {
+      case "daily":
+        return "calendar-outline";
+      case "travel":
+        return "airplane-outline";
+      case "social":
+        return "people-outline";
+      default:
+        return "apps-outline";
+    }
+  };
 
   const fetchNotes = async () => {
     setLoading(true);
     try {
       const fetchedNotes = await getUserNotes(user?.$id);
       setNotes(fetchedNotes);
+
+      const urlsMap = {};
+      for (let note of fetchedNotes) {
+        if (note.image) {
+          const previewUrl = await getImagePreview(note.image);
+          urlsMap[note.$id] = previewUrl;
+        }
+      }
+      setImageUrls(urlsMap);
     } catch (error) {
       console.error("Error fetching notes:", error);
     } finally {
@@ -40,17 +70,12 @@ const Note = ({ query, selectedCategory }) => {
     return `${day}/${month}/${year}`;
   };
 
-  // 1) Arama filtresi
-  // 2) Kategori filtresi
-  // all seçiliyse tüm notlar gelir.
   const filteredNotes = notes.filter((note) => {
-    // Arama sorgusu
     const matchesQuery = note.title.toLowerCase().includes(query.toLowerCase());
-    // Kategori kontrolü
+
     const matchesCategory =
       selectedCategory === "all" || note.category === selectedCategory;
 
-    // İki şartı da sağlarsa ekle
     return matchesQuery && matchesCategory;
   });
 
@@ -84,16 +109,16 @@ const Note = ({ query, selectedCategory }) => {
 
   if (filteredNotes.length === 0) {
     return (
-      <View className="flex flex-col justify-center items-center h-[89%]">
+      <View className="flex flex-col justify-center items-center ">
         <Text className="text-xl font-bold text-gray-600 mb-4">
           Create your first note!
         </Text>
         <TouchableOpacity
           onPress={handleCreateNote}
-          className="bg-white border gap-1 border-black flex rounded-full px-4 py-1 flex-row justify-center items-center"
+          className="bg-white items-center justify-center px-2 py-1 gap-1 border-black flex rounded-full flex-row "
         >
-          <Ionicons name="add-circle-outline" size={20} />
-          <Text className="text-black text-base text-center font-medium">
+          <Ionicons name="add-circle-outline" size={25} />
+          <Text className="text-black border rounded-full px-2  text-base text-center font-medium">
             Create
           </Text>
         </TouchableOpacity>
@@ -104,36 +129,71 @@ const Note = ({ query, selectedCategory }) => {
     );
   }
 
-  return (
-    <ScrollView
-      contentContainerStyle={{
-        flexDirection: "row",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-        padding: 16,
-      }}
-    >
-      {filteredNotes.map((note) => (
+  const renderNote = ({ item: note, index }) => {
+    if (note.content.length > 500) {
+      return (
         <TouchableOpacity
           key={note.$id}
-          className="w-44 h-48 rounded-2xl p-3 relative mb-5"
+          className="w-full bg-white shadow-lg p-4 mb-4 rounded-2xl"
           style={{ borderColor: note.borderColor, borderWidth: 2 }}
           onPress={() => handleNotePress(note.$id)}
         >
-          <View>
-            <Text className="text-xl font-bold">{note.title}</Text>
-          </View>
-          <View className="flex-1 justify-center">
-            <Text className="text-gray-500">
-              {note.content.substring(0, 80)}...
-            </Text>
-          </View>
-          <Text className="text-xs text-gray-700 absolute bottom-2 right-2">
+          <Text className="text-lg font-bold text-gray-800 mb-2">
+            {note.title}
+          </Text>
+
+          <Text className="text-gray-600 mb-3">
+            {note.content.substring(0, 200)}...
+          </Text>
+          <Text className="text-xs text-gray-500 text-right">
             {formatDate(note.createdAt)}
           </Text>
         </TouchableOpacity>
-      ))}
-    </ScrollView>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        key={note.$id}
+        className={`w-full bg-white shadow-lg p-4 mb-4 ${
+          index % 2 === 0
+            ? "h-[5rem]   rounded-tr-xl rounded-bl-3xl"
+            : "h-[5rem] rounded-tl-2xl rounded-br-4xl"
+        }`}
+        style={{ borderColor: note.borderColor, borderWidth: 2 }}
+        onPress={() => handleNotePress(note.$id)}
+      >
+        <Ionicons
+          name={getIconName(note.category)}
+          size={24}
+          color="gray"
+          className=""
+        />
+
+        <Text className="text-lg font-bold text-gray-800 mb-2 mt-2">
+          {note.title}
+        </Text>
+        <Text className="text-gray-600 mb-3">
+          {note.content.substring(0, 60)}...
+        </Text>
+        <Text className="text-xs text-gray-500 text-right">
+          {formatDate(note.createdAt)}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <FlatList
+      data={filteredNotes}
+      renderItem={renderNote}
+      keyExtractor={(item) => item.$id}
+      numColumns={1}
+      contentContainerStyle={{
+        paddingBottom: 200,
+        paddingHorizontal: 8,
+      }}
+    />
   );
 };
 

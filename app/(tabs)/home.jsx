@@ -137,7 +137,7 @@ const Home = () => {
       <View className="px-3 mt-5">
         <Categories onCategorySelect={(cat) => setSelectedCategory(cat)} />
       </View>
-      <View className="px-3 mt-5">
+      <View className="px-3 mt-5 ">
         <Note query={searchQuery} selectedCategory={selectedCategory} />
       </View>
     </SafeAreaView>
